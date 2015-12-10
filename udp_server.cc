@@ -22,6 +22,8 @@ int main(void)
 	int numbytes;
 	char buf[MAXBUFLEN];
 
+	int firsttime, lasttime; //used to calculate first and last time of transmission
+
 	struct timeval tval_before; // for getting current time
 
     long double duration = 0; // final result of the time
@@ -63,6 +65,9 @@ int main(void)
 
         if(numbytes == 5) // the packet that triggers the time to start has arrived
         {
+            gettimeofday(&tval_before, NULL); // getting current time
+            printf("Time when first 'trigger' message is received = %ld.%06ld\n\n", (long int)tval_before.tv_sec, (long int)tval_before.tv_usec);
+            firsttime = (int)tval_before.tv_usec;
             break;
         }
 	}
@@ -80,7 +85,7 @@ int main(void)
         printf("got packet from %s\n",inet_ntoa(their_addr.sin_addr));
         printf("packet is %d bytes long\n",numbytes);
         gettimeofday(&tval_before, NULL); // getting current time
-        printf("Time when message is sent = %ld.%06ld\n\n", (long int)tval_before.tv_sec, (long int)tval_before.tv_usec);
+        printf("Time when message is received = %ld.%06ld\n\n", (long int)tval_before.tv_sec, (long int)tval_before.tv_usec);
         fprintf(f, "%ld.%06ld\n", (long int)tval_before.tv_sec, (long int)tval_before.tv_usec); //storing info into text file
         totalbytes += numbytes;
 
@@ -89,15 +94,19 @@ int main(void)
 
             totalbytes -= 3;
             printf("this is the packet that triggers a disconect.\n");
+            gettimeofday(&tval_before, NULL); // getting current time
+            printf("Current time and time of termination = %ld.%06ld\n\n", (long int)tval_before.tv_sec, (long int)tval_before.tv_usec);
+            lasttime = (int)tval_before.tv_usec;
             break;
         }
         //buf[numbytes] = '\0';
         //printf("packet contains \"%s\"\n",buf); //uncomment this line if want to see what packet contains
         ++i;
     }
-;
-    printf("A total of %llu bytes were received.\n", totalbytes);
 
+    printf("A total of %llu bytes were received.\n", totalbytes);
+    throughput = totalbytes*1000000/(lasttime-firsttime);//times a million because tv_usec is in microseconds.
+    printf("Throughtput of receiving messages is %llu bytes per second\n", throughput);
 	close(sockfd);
 	return 0;
 }

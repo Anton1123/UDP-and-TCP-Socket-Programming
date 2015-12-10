@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
 	long double duration = 0; // final result of the time
 	unsigned long long int totalbytes = 0; // for calculating total data
     unsigned long long int throughput = 0; // will be final result of the throughput (i.e. totalbytes/duration)
+    int firsttime, lasttime; //used to calculate first and last time of transmission
 
     struct timeval tval_before; // for getting current time
 
@@ -62,7 +63,9 @@ int main(int argc, char *argv[])
         perror("sendto");
         exit(1);
     }
-
+    gettimeofday(&tval_before, NULL); // getting current time
+    printf("Time when first 'trigger' message is sent = %ld.%06ld\n\n", (long int)tval_before.tv_sec, (long int)tval_before.tv_usec);
+    firsttime = (int)tval_before.tv_usec;
 
     for (int i = 1; i < TRIALS + 1; i++)
     {
@@ -79,6 +82,7 @@ int main(int argc, char *argv[])
         printf("sent %d bytes to %s\n", numbytes, inet_ntoa(their_addr.sin_addr));
         printf("Time when message is sent = %ld.%06ld\n\n", (long int)tval_before.tv_sec, (long int)tval_before.tv_usec);
         fprintf(f, "%ld.%06ld\n", (long int)tval_before.tv_sec, (long int)tval_before.tv_usec); //storing info into text file
+
         totalbytes += numbytes; //updating total number of bytes sent
     }
 
@@ -88,7 +92,13 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
+    gettimeofday(&tval_before, NULL); // getting current time
+    printf("Current time and time of termination = %ld.%06ld\n\n", (long int)tval_before.tv_sec, (long int)tval_before.tv_usec);
+    lasttime = (int)tval_before.tv_usec;
+
     printf("A total of %llu bytes were sent.\n", totalbytes);
+    throughput = totalbytes*1000000/(lasttime-firsttime);//times a million because tv_usec is in microseconds.
+    printf("Throughtput of sending messages is %llu bytes per second\n", throughput);
 
 
 	close(sockfd);
